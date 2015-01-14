@@ -18,7 +18,11 @@
 # twp - Unittests --------------------------------------------------------------
 # ------------------------------------------------------------------------------
 import unittest
-import ttp
+import sys
+
+from os.path import dirname, abspath
+sys.path.insert(0, dirname(dirname(abspath(__file__))))
+from ttp import ttp
 
 
 class TWPTests(unittest.TestCase):

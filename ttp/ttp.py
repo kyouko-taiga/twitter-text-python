@@ -20,53 +20,20 @@
 
 # Tweet Parser and Formatter ---------------------------------------------------
 # ------------------------------------------------------------------------------
-import re
-import urllib
+import sys
+if sys.version_info < (3, 0):
+    import urllib
+    from .py2_regex import LIST_REGEX, USERNAME_REGEX, REPLY_REGEX, HASHTAG_REGEX
+    from .py2_regex import URL_REGEX
+else:
+    import urllib.parse
+    from ttp.py3_regex import LIST_REGEX, USERNAME_REGEX, REPLY_REGEX, HASHTAG_REGEX
+    from ttp.py3_regex import URL_REGEX
 
-__version__ = "1.0.1.0"
-
-# Some of this code has been translated from the twitter-text-java library:
-# <http://github.com/mzsanford/twitter-text-java>
-AT_SIGNS = ur'[@\uff20]'
-UTF_CHARS = ur'a-z0-9_\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u00ff'
-SPACES = ur'[\u0020\u00A0\u1680\u180E\u2002-\u202F\u205F\u2060\u3000]'
-
-# Lists
-LIST_PRE_CHARS = ur'([^a-z0-9_]|^)'
-LIST_END_CHARS = ur'([a-z0-9_]{1,20})(/[a-z][a-z0-9\x80-\xFF-]{0,79})?'
-LIST_REGEX = re.compile(LIST_PRE_CHARS + '(' + AT_SIGNS + '+)' + LIST_END_CHARS,
-                        re.IGNORECASE)
-
-# Users
-USERNAME_REGEX = re.compile(ur'\B' + AT_SIGNS + LIST_END_CHARS, re.IGNORECASE)
-REPLY_REGEX = re.compile(ur'^(?:' + SPACES + ur')*' + AT_SIGNS
-                         + ur'([a-z0-9_]{1,20}).*', re.IGNORECASE)
-
-# Hashtags
-HASHTAG_EXP = ur'(^|[^0-9A-Z&/]+)(#|\uff03)([0-9A-Z_]*[A-Z_]+[%s]*)' % UTF_CHARS
-HASHTAG_REGEX = re.compile(HASHTAG_EXP, re.IGNORECASE)
-
-
-# URLs
-PRE_CHARS = ur'(?:[^/"\':!=]|^|\:)'
-DOMAIN_CHARS = ur'([\.-]|[^\s_\!\.\/])+\.[a-z]{2,}(?::[0-9]+)?'
-PATH_CHARS = ur'(?:[\.,]?[%s!\*\'\(\);:=\+\$/%s#\[\]\-_,~@])' % (UTF_CHARS, '%')
-QUERY_CHARS = ur'[a-z0-9!\*\'\(\);:&=\+\$/%#\[\]\-_\.,~]'
-
-# Valid end-of-path chracters (so /foo. does not gobble the period).
-# 1. Allow ) for Wikipedia URLs.
-# 2. Allow =&# for empty URL parameters and other URL-join artifacts
-PATH_ENDING_CHARS = r'[%s\)=#/]' % UTF_CHARS
-QUERY_ENDING_CHARS = '[a-z0-9_&=#]'
-
-URL_REGEX = re.compile('((%s)((https?://|www\\.)(%s)(\/(%s*%s)?)?(\?%s*%s)?))'
-                       % (PRE_CHARS, DOMAIN_CHARS, PATH_CHARS,
-                          PATH_ENDING_CHARS, QUERY_CHARS, QUERY_ENDING_CHARS),
-                       re.IGNORECASE)
+__version__ = "1.0.1.1"
 
 # Registered IANA one letter domains
 IANA_ONE_LETTER_DOMAINS = ('x.com', 'x.org', 'z.com', 'q.net', 'q.com', 'i.net')
-
 
 class ParseResult(object):
 
@@ -265,8 +232,12 @@ class Parser(object):
     # User defined formatters --------------------------------------------------
     def format_tag(self, tag, text):
         '''Return formatted HTML for a hashtag.'''
+        if sys.version_info < (3, 0):
+            quote = urllib.quote('#' + text.encode('utf-8'))
+        else:
+            quote =  urllib.parse.quote('#' + text)
         return '<a href="https://twitter.com/search?q=%s">%s%s</a>' \
-            % (urllib.quote('#' + text.encode('utf-8')), tag, text)
+            % (quote, tag, text)
 
     def format_username(self, at_char, user):
         '''Return formatted HTML for a username.'''
